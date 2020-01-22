@@ -60,8 +60,16 @@ class Lexer():
                 return False
             else:
                 self.error()
+    #integer arrays reprented by lists
     def arr(self):
-        pass
+        result = ''
+        self.next()
+        while self.current_char is not None and self.current_char != "]":
+            result = result+self.current_char
+            self.next()
+        self.next()
+        result = [int(t) for t in result.split(',')]
+        return result
     def skipskip(self):
         while self.current_char is not None and self.current_char in ('s', 'k', 'i', 'p'):
             self.next()
@@ -126,6 +134,8 @@ class Lexer():
                 self.next()
             if self.current_char.isdigit():
                 return Token("INT", self.num())
+            if self.current_char == "[":
+                return Token("ARR", self.arr())
             if self.current_char == "+":
                 self.next()
                 return Token('PLUS', "+")
@@ -194,8 +204,15 @@ class Lexer():
                         self.error()
             self.error()
 
+#create all the needed nodes
+
+#lexer tokenize everything with the proper token, each time object.tokenize is called, the next value gets tokenized
 class Parser():
-    pass
+    def __init__(self, lexer):
+        self.lexer = lexer
+        self.current_token = self.lexer.tokenize()
+    def error(self):
+        raise error("Invalid Syntax for this language")
 
 class Interper():
     pass
