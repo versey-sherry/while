@@ -10,7 +10,7 @@ import sys
 sys.tracebacklimit = 0
 '''
 #lexer
-#test string: "x:=1; y:=2; skip; if a=b then x:=x+1 else x:=x*1; while {b<d do x-y};a∧b; d∨c;"
+#test string: "a := 369; b := 1107; a:= a+b*c-d; while ¬(a=b) do { if a < b then b := b - a else a := a - b}"
 class Token():
     def __init__(self, type, value):
         self.type = type
@@ -20,6 +20,7 @@ class Token():
 
 class Lexer():
     def __init__(self, text):
+        self.state = {}
         self.text = text
         #keep track of reading 
         self.pos = 0
@@ -70,7 +71,7 @@ class Lexer():
             result = result + self.current_char
             self.next()
         if result == ":=":
-            return "ASSIGN"
+            return "assign"
         else:
             self.error()   
     def twhile(self):
@@ -158,6 +159,12 @@ class Lexer():
             if self.current_char == "}":
                 self.next()
                 return Token("RIGHTCURL", "}")
+            if self.current_char == "(":
+                self.next()
+                return Token("LEFTPAR", "(")
+            if self.current_char == ")":
+                self.next()
+                return Token("RIGHTPAR", ")")
             if self.current_char == ":":
                 return Token("ASSIGN", self.assign())
 
@@ -186,6 +193,12 @@ class Lexer():
                     else:
                         self.error()
             self.error()
+
+class Parser():
+    pass
+
+class Interper():
+    pass
 
 '''
 def main():
