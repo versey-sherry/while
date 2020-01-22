@@ -220,6 +220,9 @@ class BoolNode():
     def __init__(self, token):
         self.value = token.value
         self.op = token.type
+class NotNode():
+    def __init__(self, token):
+        self.op = token.type
 #For all the Aexpr operations
 class BinopNode():
     def __init__(self, left, right, op):
@@ -228,7 +231,10 @@ class BinopNode():
         self.op = op
 #For all the Bexpr operations
 class BoolopNode():
-    pass
+    def __init__(self, left, right, op):
+        self.left = left
+        self.right = right
+        self.op = op
 class AssignNode():
     pass
 class CompNode():
@@ -258,7 +264,8 @@ class Parser():
         self.state = lexer.state
         self.current_token = lexer.tokenize()
     def error(self):
-        raise error("Invalid Syntax for this language")
+        raise error("Invalid Syntax for this language")   
+
     def factor(self):
         token = self.current_token
         #negative value
@@ -276,11 +283,17 @@ class Parser():
             node = VarNode(token)
         elif token.type == "ARR":
             node = ArrNode(token)
+        elif token.type == "NOT":
+            node = NotNode(token)
         elif token.type == "BOOL":
             node = BoolNode(token)
+        elif token.tpye == "LEFTPAR":
+            self.current_token = self.lexer.tokenize()
+            node = bexpr()
+        elif token.type == "RIGHTPAR":
+            pass
         else:
-            self.error()
-        
+            self.error()      
         self.current_token = self.lexer.tokenize()      
         return node
     
@@ -304,7 +317,7 @@ class Parser():
             node = BinopNode(left = node, right = self.aterm(), op = ttype)
             #print("in expr",node.left, node.right)
         return node
-    #this returns a node that represent Aexpr
+    #this returns a node that represent Aexpr for debugging
     def aparse(self):
         return self.aexpr()
 
@@ -314,14 +327,23 @@ class Parser():
             print(self.current_token)
             ttype = self.current_token.type
             self.current_token = self.lexer.tokenize()
-            
-
-
-
-
-
+            node = BoolopNode(left = node, right = self.aexpr(), op = ttype)
+        return node
+    
     def bexpr(self):
-        pass
+        node = self.bterm()
+        if node.op == "NOT":
+            print(self.current_token)
+            node.ap = self.bexpr()
+        while self.current_token.type in ("AND", "OR"):
+            print(self.current_token)
+            ttype = self.current_token.type
+            self.current_token = self.lexer.tokenize()
+            node = BinopNode(left = node, right = self.bterm(), op = ttype)
+        return node
+
+    def bparse(self):
+        return self.bexpr()
 
     def cexpr():
         pass
