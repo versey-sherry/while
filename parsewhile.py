@@ -180,7 +180,7 @@ class Lexer():
 
             #Alphebetical inputs
             if self.current_char.isalpha():
-                if self.pos +1 < len(self.text) and not self.text[self.pos+1].isalpha():
+                if (self.pos +1 == len(self.text) or (not self.text[self.pos+1].isalpha())):
                     var = self.current_char
                     self.next()
                     return Token("VAR", var)
@@ -284,7 +284,7 @@ class Parser():
         self.current_token = self.lexer.tokenize()      
         return node
     
-    def term(self):
+    def aterm(self):
         node = self.factor()
         while self.current_token.type == 'MUL':
             print(self.current_token)
@@ -295,19 +295,35 @@ class Parser():
         return node
         
     def aexpr(self):
-        node = self.term()  
+        node = self.aterm()  
         #print("in expression", token.value)
         while self.current_token.type in ("PLUS", "MINUS"):
             print(self.current_token)
             ttype = self.current_token.type
             self.current_token = self.lexer.tokenize()
-            node = BinopNode(left = node, right = self.term(), op = ttype)
+            node = BinopNode(left = node, right = self.aterm(), op = ttype)
             #print("in expr",node.left, node.right)
         return node
+    #this returns a node that represent Aexpr
     def aparse(self):
         return self.aexpr()
 
+    def bterm(self):
+        node = self.aexpr()
+        if self.current_token.type in ("EQUAL","LESSTHAN"):
+            print(self.current_token)
+            ttype = self.current_token.type
+            self.current_token = self.lexer.tokenize()
+            
+
+
+
+
+
     def bexpr(self):
+        pass
+
+    def cexpr():
         pass
     def statement(self):
         pass
