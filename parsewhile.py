@@ -194,25 +194,123 @@ class Lexer():
                         return Token("DO", self.tdo())
                     elif self.current_char == "i":
                         return Token("IF", self.tif())
-                    elif self.current_char == "t":
+                    elif self.current_char == "t" and self.text[self.pos+1] =="h":
                         return Token("THEN", self.tthen())
                     elif self.current_char == "e":
                         return Token("ELSE", self.telse())
                     elif self.current_char in ('t','f'):
-                        return Token("ELSE", self.bool())
-                    else:
-                        self.error()
+                        return Token("BOOL", self.bool())
             self.error()
+        return(Token("EOF", None))
 
 #create all the needed nodes
+class IntNode():
+    def __init__(self, token):
+        self.value = token.value
+        self.op = token.type
+class ArrNode():
+    def __init__(self, token):
+        self.value = token.value
+        self.op = token.type
+class VarNode():
+    def __init__(self, token):
+        self.value = token.value
+        self.op = token.type
+class BoolNode():
+    def __init__(self, token):
+        self.value = token.value
+        self.op = token.type
+#For all the Aexpr operations
+class BinopNode():
+    def __init__(self, left, right, op):
+        self.left = left
+        self.right = right
+        self.op = op
+#For all the Bexpr operations
+class BoolopNode():
+    pass
+class AssignNode():
+    pass
+class CompNode():
+    pass
+class WhileNode():
+    #should be a while true and while false
+    pass
+class DoNode():
+    pass
+class IfNode():
+    pass
+class ThenNode():
+    pass
+class ElseNode():
+    pass
+
+#help with creating a dictionary for states
+class helpers():
+    def create_dict(self, var, value):
+        return dict([tuple([var,value])])
 
 #lexer tokenize everything with the proper token, each time object.tokenize is called, the next value gets tokenized
+#Parser should parse out a AST.
 class Parser():
     def __init__(self, lexer):
         self.lexer = lexer
-        self.current_token = self.lexer.tokenize()
+        self.state = lexer.state
+        self.current_token = lexer.tokenize()
     def error(self):
         raise error("Invalid Syntax for this language")
+    def factor(self):
+        token = self.current_token
+        #negative value
+        if token.type == "MINUS":
+            self.current_token = self.lexer.tokenize()
+            token = self.current_token
+            #print('first',token.value)
+            token.value = -token.value
+            #print(token.value)
+            node = IntNode(token)
+        elif token.type == "INT":
+            node = IntNode(token)
+            #print(node.value)
+        elif token.type == "VAR":
+            node = VarNode(token)
+        elif token.type == "ARR":
+            node = ArrNode(token)
+        elif token.type == "BOOL":
+            node = BoolNode(token)
+        else:
+            self.error()
+        
+        self.current_token = self.lexer.tokenize()      
+        return node
+    
+    def term(self):
+        node = self.factor()
+        while self.current_token.type == 'MUL':
+            print(self.current_token)
+            ttype = self.current_token.type
+            self.current_token = self.lexer.tokenize()
+            node = BinopNode(left = node, right = self.factor(), op = ttype)
+            #print("in term",node.left, node.right) 
+        return node
+        
+    def aexpr(self):
+        node = self.term()  
+        #print("in expression", token.value)
+        while self.current_token.type in ("PLUS", "MINUS"):
+            print(self.current_token)
+            ttype = self.current_token.type
+            self.current_token = self.lexer.tokenize()
+            node = BinopNode(left = node, right = self.term(), op = ttype)
+            #print("in expr",node.left, node.right)
+        return node
+    def aparse(self):
+        return self.aexpr()
+
+    def bexpr(self):
+        pass
+    def statement(self):
+        pass
 
 class Interper():
     pass
