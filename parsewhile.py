@@ -42,24 +42,6 @@ class Lexer():
             result = result + self.current_char
             self.next()
         return int(result)
-    def bool(self):
-        result = ''
-        if self.current_char == 't':
-            while self.current_char is not None and self.current_char in ('t', 'r', 'u', 'e'):
-                result = result + self.current_char
-                self.next()
-            if result == "true":
-                return True
-            else:
-                self.error()
-        else:
-            while self.current_char is not None and self.current_char in ('f', 'a', 'l', 's', 'e'):
-                result = result + self.current_char
-                self.next()
-            if result == "false":
-                return False
-            else:
-                self.error()
     #integer arrays reprented by lists
     def arr(self):
         result = ''
@@ -70,9 +52,6 @@ class Lexer():
         self.next()
         result = [int(t) for t in result.split(',')]
         return result
-    def skipskip(self):
-        while self.current_char is not None and self.current_char in ('s', 'k', 'i', 'p'):
-            self.next()
     def assign(self):
         result = ''
         while self.current_char is not None and self.current_char in (':', '='):
@@ -82,52 +61,7 @@ class Lexer():
             return "assign"
         else:
             self.error()   
-    def twhile(self):
-        result = ''
-        while self.current_char is not None and self.current_char in ('w','h','i','l','e'):
-            result = result + self.current_char
-            self.next()
-        if result == "while":
-            return "while"
-        else:
-            self.error()
     
-    def tdo(self):
-        result = ''
-        while self.current_char is not None and self.current_char in ('d','o'):
-            result = result + self.current_char
-            self.next()
-        if result == "do":
-            return "do"
-        else:
-            self.error()
-    def tif(self):
-        result = ''
-        while self.current_char is not None and self.current_char in ('i','f'):
-            result = result + self.current_char
-            self.next()
-        if result == "if":
-            return "if"
-        else:
-            self.error()   
-    def tthen(self):
-        result = ''
-        while self.current_char is not None and self.current_char in ('t', 'h', 'e', 'n'):
-            result = result + self.current_char
-            self.next()
-        if result == "then":
-            return 'then'
-        else:
-            self.error()
-    def telse(self):
-        result = ''
-        while self.current_char is not None and self.current_char in ('e', 'l', 's', 'e'):
-            result = result + self.current_char
-            self.next()
-        if result == "else":
-            return 'else'
-        else:
-            self.error()
     def tokenize(self):
         while self.current_char is not None:
             if self.current_char in (" ", "\n", "\r"):
@@ -180,11 +114,35 @@ class Lexer():
 
             #Alphebetical inputs
             if self.current_char.isalpha():
+                result = ''
+                while self.current_char is not None and self.current_char.isalpha():
+                    result = result+self.current_char
+                    self.next()
+                if result == "while":
+                    return Token("WHILE", "while")
+                elif result == "skip":
+                    return Token("SKIP", "skip")
+                elif result == "do":
+                    return Token("DO", "do")
+                elif result == "if":
+                    return Token("IF", "if")
+                elif result == "else":
+                    return Token("ELSE", "else")
+                elif result == "then":
+                    return Token("THEN", "then")
+                elif result == "true":
+                    return Token("TRUE", True)
+                elif result == "false":
+                    return Token("FALSE", False)
+                else:
+                    return Token("VAR", result)
+                '''
+                #single charater var
                 if (self.pos +1 == len(self.text) or (not self.text[self.pos+1].isalpha())):
                     var = self.current_char
                     self.next()
                     return Token("VAR", var)
-
+                
                 if self.pos +1 < len(self.text) and self.text[self.pos+1].isalpha():
                     if self.current_char == "s":
                         return Token("SKIP", self.skipskip())
@@ -200,6 +158,8 @@ class Lexer():
                         return Token("ELSE", self.telse())
                     elif self.current_char in ('t','f'):
                         return Token("BOOL", self.bool())
+                    elif 
+                    '''
             self.error()
         return(Token("EOF", None))
 
@@ -253,14 +213,18 @@ class CompNode():
 class WhileNode():
     #should be a while true and while false
     def __init__(self, cond, wtrue, wfalse):
-        pass
+        self.cond = cond
+        self.wtrue = wtrue
+        self.wfalse = wfalse
 #it will be just like parenthisis, this should be consumed by while
 class DoNode():
     pass
 #just like not
 class IfNode():
     def __init__(self, cond, iftrue, iffalse):
-        pass
+        self.cond =cond
+        self.ifture = iftrue
+        self.iffalse = iffalse
 class ThenNode():
     pass
 class ElseNode():
@@ -315,7 +279,17 @@ class Parser():
         elif token.type == "SKIP":
             node = SkipNode(token)
         elif token.type == "WHILE":
-            pass
+            #go to the next token
+            self.current_token = self.lexer.tokenize()
+            cond = self.bexpr()
+            wfalse = SkipNode
+            if self.current_token.type == "DO":
+                self.current_token = self.lexer.tokenize()
+                pass
+            return WhileNode(cond, wtrue, wfalse)
+
+
+
         elif token.type == "IF":
             pass
         else:
