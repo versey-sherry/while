@@ -221,8 +221,9 @@ class BoolNode():
         self.value = token.value
         self.op = token.type
 class NotNode():
-    def __init__(self, token):
-        self.op = token.type
+    def __init__(self, node):
+        self.op = "NOT"
+        self.ap = node
 #For all the Aexpr operations
 class BinopNode():
     def __init__(self, left, right, op):
@@ -250,11 +251,6 @@ class ThenNode():
     pass
 class ElseNode():
     pass
-
-#help with creating a dictionary for states
-class helpers():
-    def create_dict(self, var, value):
-        return dict([tuple([var,value])])
 
 #lexer tokenize everything with the proper token, each time object.tokenize is called, the next value gets tokenized
 #Parser should parse out a AST.
@@ -284,14 +280,24 @@ class Parser():
         elif token.type == "ARR":
             node = ArrNode(token)
         elif token.type == "NOT":
-            node = NotNode(token)
+            print("got to not")
+            self.current_token = self.lexer.tokenize()
+            print(self.current_token)
+            if self.current_token.type == "LEFTPAR":
+                self.current_token = self.lexer.tokenize()
+                node = self.bexpr()
+            elif self.current_token.type == "BOOL":
+                node = BoolNode(token)
+            else:
+                self.error()
+            node = NotNode(node)
         elif token.type == "BOOL":
             node = BoolNode(token)
-        elif token.tpye == "LEFTPAR":
+        elif token.type == "LEFTPAR":
             self.current_token = self.lexer.tokenize()
-            node = bexpr()
+            node = self.bexpr()
         elif token.type == "RIGHTPAR":
-            pass
+            self.current_token = self.lexer.tokenize()
         else:
             self.error()      
         self.current_token = self.lexer.tokenize()      
@@ -332,9 +338,6 @@ class Parser():
     
     def bexpr(self):
         node = self.bterm()
-        if node.op == "NOT":
-            print(self.current_token)
-            node.ap = self.bexpr()
         while self.current_token.type in ("AND", "OR"):
             print(self.current_token)
             ttype = self.current_token.type
@@ -349,6 +352,11 @@ class Parser():
         pass
     def statement(self):
         pass
+
+#help with creating a dictionary for states
+class helpers():
+    def create_dict(self, var, value):
+        return dict([tuple([var,value])])
 
 class Interper():
     pass
