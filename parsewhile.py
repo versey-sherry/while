@@ -236,17 +236,31 @@ class BoolopNode():
         self.left = left
         self.right = right
         self.op = op
+class SkipNode():
+    def __init__(self, token):
+        self.value = token.value
+        self.op = token.type
 class AssignNode():
-    pass
+    def __init__(self, left, right, op):
+        self.left = left
+        self.right = right
+        self.op = op
 class CompNode():
-    pass
+    def __init__(self, left, right, op):
+        self.left = left
+        self.right = right
+        self.op = op
 class WhileNode():
     #should be a while true and while false
-    pass
+    def __init__(self, cond, wtrue, wfalse):
+        pass
+#it will be just like parenthisis, this should be consumed by while
 class DoNode():
     pass
+#just like not
 class IfNode():
-    pass
+    def __init__(self, cond, iftrue, iffalse):
+        pass
 class ThenNode():
     pass
 class ElseNode():
@@ -298,6 +312,12 @@ class Parser():
             node = self.bexpr()
         elif token.type == "RIGHTPAR":
             self.current_token = self.lexer.tokenize()
+        elif token.type == "SKIP":
+            node = SkipNode(token)
+        elif token.type == "WHILE":
+            pass
+        elif token.type == "IF":
+            pass
         else:
             self.error()      
         self.current_token = self.lexer.tokenize()      
@@ -344,20 +364,35 @@ class Parser():
             self.current_token = self.lexer.tokenize()
             node = BinopNode(left = node, right = self.bterm(), op = ttype)
         return node
-
+    #this returns a node that represents combination of aexpr and bexpr
     def bparse(self):
         return self.bexpr()
 
-    def cexpr():
-        pass
-    def statement(self):
-        pass
+    def cterm(self):
+        node = self.bexpr()
+        if self.current_token.type == "ASSIGN":
+            print(self.current_token)
+            ttype = self.current_token.type
+            self.current_token = self.lexer.tokenize()
+            node = AssignNode(left = node, right = self.bexpr(), op = ttype)
+        return node
 
-#help with creating a dictionary for states
+    def cexpr(self):
+        node = self.cterm()
+        while self.current_token.type == "COMP":
+            print(self.current_token)
+            ttype = self.current_token.type
+            self.current_token = self.lexer.tokenize()
+            node = CompNode(left = node, right = self.cterm(), op = ttype)
+        return node
+
+    def cparse(self):
+        return self.cexpr()
+
+#General helper function for evaluating AST.
 class helpers():
     def create_dict(self, var, value):
         return dict([tuple([var,value])])
-
 class Interper():
     pass
 
