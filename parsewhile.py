@@ -211,24 +211,19 @@ class CompNode():
         self.right = right
         self.op = op
 class WhileNode():
-    #should be a while true and while false
+    #should be a condition, while true and while false
     def __init__(self, cond, wtrue, wfalse):
         self.cond = cond
         self.wtrue = wtrue
         self.wfalse = wfalse
-#it will be just like parenthisis, this should be consumed by while
-class DoNode():
-    pass
-#just like not
+        self.op = "WHILE"
+#just like while
 class IfNode():
     def __init__(self, cond, iftrue, iffalse):
         self.cond =cond
-        self.ifture = iftrue
+        self.iftrue = iftrue
         self.iffalse = iffalse
-class ThenNode():
-    pass
-class ElseNode():
-    pass
+        self.op = "IF"
 
 #lexer tokenize everything with the proper token, each time object.tokenize is called, the next value gets tokenized
 #Parser should parse out a AST.
@@ -282,16 +277,24 @@ class Parser():
             #go to the next token
             self.current_token = self.lexer.tokenize()
             cond = self.bexpr()
-            wfalse = SkipNode
+            wfalse = SkipNode(Token("SKIP","skip"))
             if self.current_token.type == "DO":
                 self.current_token = self.lexer.tokenize()
-                pass
+                if self.current_token.type == "LEFTCURL":
+                    self.current_token = self.lexer.tokenize()
+                    wtrue = self.cexpr()
             return WhileNode(cond, wtrue, wfalse)
 
-
-
         elif token.type == "IF":
-            pass
+            self.current_token = self.lexer.tokenize()
+            cond = self.bexpr()
+            if self.current_token.type == "THEN":
+                self.current_token = self.lexer.tokenize()
+                iftrue = self.cexpr()
+            if self.current_token.type == "ELSE":
+                self.current_token = self.lexer.tokenize()
+                iffalse = self.cexpr()
+            return IfNode(cond, iftrue, iffalse)
         else:
             self.error()      
         self.current_token = self.lexer.tokenize()      
@@ -359,7 +362,7 @@ class Parser():
             self.current_token = self.lexer.tokenize()
             node = CompNode(left = node, right = self.cterm(), op = ttype)
         return node
-
+    #this returns a node that represents combination of aexpr and bexpr
     def cparse(self):
         return self.cexpr()
 
