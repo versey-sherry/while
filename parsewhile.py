@@ -253,7 +253,7 @@ class Parser():
         elif token.type == "ARR":
             node = ArrNode(token)
         elif token.type == "NOT":
-            print("got to not")
+            #print("got to not")
             self.current_token = self.lexer.tokenize()
             print(self.current_token)
             if self.current_token.type == "LEFTPAR":
@@ -375,24 +375,22 @@ class Interper():
 
 '''
 def main():
+    contents = []
     while True:
         try:
-            text = input()
+            line = input()
+            line = line.strip()
         except EOFError:
             break
-        print(Lexer(text).skipchar())
+        contents.append(line)
+    
+    text = ' '.join(contents)
 
-https://stackoverflow.com/questions/30239092/how-to-get-multiline-input-from-user
-contents = []
-while True:
-    try:
-        line = input()
-        if line == "":
-            break
-    except EOFError:
-        break
-    contents.append(line)
-print(contents)
+    a = Lexer(text)
+    b = Parser(a)
+    c = b.cparse()
+    print(text)
+    print(c)
 
 if __name__ == '__main__':
     main()
