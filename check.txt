@@ -1,1 +1,0 @@
-a := 98;            b := 76;            while ¬(a=b) do {              if a < b then                 b := b - a              else                 a := a - b
