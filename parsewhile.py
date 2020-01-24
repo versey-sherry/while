@@ -471,12 +471,11 @@ def main():
     interpreter = Interpreter(parser)
     interpreter.visit()
     state = interpreter.state
-    print_var = interpreter.print_var
-    print(print_var)
-    print(state)
-    '''
-    for item in set(interpreter.assign_list):
+    print_var = set(interpreter.print_var)
+    #print(print_var)
+    
+    for item in print_var:
         print(item, " → ",state[item])
-    '''
+
 if __name__ == '__main__':
     main()
