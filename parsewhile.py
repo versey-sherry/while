@@ -131,9 +131,9 @@ class Lexer():
                 elif result == "then":
                     return Token("THEN", "then")
                 elif result == "true":
-                    return Token("TRUE", True)
+                    return Token("BOOL", True)
                 elif result == "false":
-                    return Token("FALSE", False)
+                    return Token("BOOL", False)
                 else:
                     return Token("VAR", result)
                 '''
@@ -260,7 +260,7 @@ class Parser():
                 self.current_token = self.lexer.tokenize()
                 node = self.bexpr()
             elif self.current_token.type == "BOOL":
-                node = BoolNode(token)
+                node = BoolNode(self.current_token)
             else:
                 self.error()
             node = NotNode(node)
@@ -367,11 +367,50 @@ class Parser():
         return self.cexpr()
 
 #General helper function for evaluating AST.
-class helpers():
-    def create_dict(self, var, value):
-        return dict([tuple([var,value])])
-class Interper():
-    pass
+def create_dict(var, value):
+    return dict([tuple([var,value])])
+
+def evaluate(ast, state):
+    state = state
+    node = ast
+    if node.op in ("INT", "ARR", "BOOL", "VAR"):
+        return node.value
+    elif node.op == "SKIP":
+        return state
+    elif node.op == "PLUS":
+        return evaluate(node.left, state)+evaluate(node.right, state)
+    elif node.op == "MINUS":
+        return evaluate(node.left, state)-evaluate(node.right, state)
+    elif node.op == "MUL":
+        return evaluate(node.left, state)*evaluate(node.right, state)
+    elif node.op == "NOT":
+        return not evaluate(node.ap, state)
+    elif node.op =="EQUAL":
+        return evaluate(node.left, state) == evaluate(node.right, state)
+    elif node.op =="LESSTHAN":
+        return evaluate(node.left, state) < evaluate(node.right, state)
+    elif node.op =="AND":
+        return (evaluate(node.left, state) and evaluate(node.right, state))
+    elif node.op =="OR":
+        return (evaluate(node.left, state) or evaluate(node.right, state))
+
+class Interpreter():
+    def __init__(self, parser):
+        self.state = parser.state
+        #load the AST by its root node and evaluate recurssively
+        self.ast = parser.cparse()
+        #print("The biscuit is here", self.current_node)
+    def error(self):
+        raise Error("This input is invalid")
+    def visit(self):
+        return evaluate(self.ast, self.state)
+
+def test(text):
+    a = Lexer(text)
+    b = Parser(a)
+    c = Interpreter(b)
+    return c
+
 
 '''
 def main():
@@ -386,9 +425,11 @@ def main():
     
     text = ' '.join(contents)
 
-    a = Lexer(text)
-    b = Parser(a)
-    c = b.cparse()
+    lexer = Lexer(text)
+    parser = Parser(lexer)
+    #AST
+    ast = parser.cparse
+    interpreter = Interpreter(parser)
     print(text)
     print(c)
 
