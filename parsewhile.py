@@ -4,11 +4,10 @@
 #Additonal feature is array
 #states managed by python dictionary
 
-'''
-uncomment this when it is all done.
+#uncomment this when it is all done.
 import sys
 sys.tracebacklimit = 0
-'''
+
 #lexer
 #test string: "a := 369; b := 1107; a:= a+b*c-d; while ¬(a=b) do { if a < b then b := b - a else a := a - b}"
 class Token():
@@ -388,11 +387,20 @@ def evaluate(ast, state, print_var):
     elif node.op == "SKIP":
         state = state
     elif node.op == "PLUS":
-        return evaluate(node.left, state, print_var)+evaluate(node.right, state, print_var)
+        try:
+            return evaluate(node.left, state, print_var)+evaluate(node.right, state, print_var)
+        except TypeError:
+            print("This operation is not supported but do you know that cats can rotate their ears 180 degrees?")
     elif node.op == "MINUS":
-        return evaluate(node.left, state, print_var)-evaluate(node.right, state, print_var)
+        try:
+            return evaluate(node.left, state, print_var)-evaluate(node.right, state, print_var)
+        except TypeError:
+            print("This operation is not supported but do you know that meows are not innate cat language? They developed them to communicate with humans!")
     elif node.op == "MUL":
-        return evaluate(node.left, state, print_var)*evaluate(node.right, state, print_var)
+        try:
+            return evaluate(node.left, state, print_var)*evaluate(node.right, state, print_var)
+        except TypeError:
+            print("This operation is not supported but do you know that the hearing of the average cat is at least five times keener than that of a human adult?")
     elif node.op == "NOT":
         return not evaluate(node.ap, state, print_var)
     elif node.op =="EQUAL":
