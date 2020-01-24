@@ -465,7 +465,7 @@ def main():
     
     text = ' '.join(contents)
 
-    print(text)
+    #print(text)
     lexer = Lexer(text)
     parser = Parser(lexer)
     interpreter = Interpreter(parser)
@@ -473,9 +473,11 @@ def main():
     state = interpreter.state
     print_var = set(interpreter.print_var)
     #print(print_var)
-    
+    output_string = []
     for item in print_var:
-        print(item, " → ",state[item])
+        separator = " "
+        output_string.append(separator.join([item, " → ",str(state[item])]))
+    print(", ".join(output_string))
 
 if __name__ == '__main__':
     main()
