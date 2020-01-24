@@ -254,7 +254,7 @@ class Parser():
         elif token.type == "NOT":
             #print("got to not")
             self.current_token = self.lexer.tokenize()
-            print(self.current_token)
+            #print(self.current_token)
             if self.current_token.type == "LEFTPAR":
                 self.current_token = self.lexer.tokenize()
                 node = self.bexpr()
@@ -305,7 +305,7 @@ class Parser():
     def aterm(self):
         node = self.factor()
         while self.current_token.type == 'MUL':
-            print(self.current_token)
+            #print(self.current_token)
             ttype = self.current_token.type
             self.current_token = self.lexer.tokenize()
             node = BinopNode(left = node, right = self.factor(), op = ttype)
@@ -316,7 +316,7 @@ class Parser():
         node = self.aterm()  
         #print("in expression", token.value)
         while self.current_token.type in ("PLUS", "MINUS"):
-            print(self.current_token)
+            #print(self.current_token)
             ttype = self.current_token.type
             self.current_token = self.lexer.tokenize()
             node = BinopNode(left = node, right = self.aterm(), op = ttype)
@@ -329,7 +329,7 @@ class Parser():
     def bterm(self):
         node = self.aexpr()
         if self.current_token.type in ("EQUAL","LESSTHAN"):
-            print(self.current_token)
+            #print(self.current_token)
             ttype = self.current_token.type
             self.current_token = self.lexer.tokenize()
             node = BoolopNode(left = node, right = self.aexpr(), op = ttype)
@@ -338,7 +338,7 @@ class Parser():
     def bexpr(self):
         node = self.bterm()
         while self.current_token.type in ("AND", "OR"):
-            print(self.current_token)
+            #print(self.current_token)
             ttype = self.current_token.type
             self.current_token = self.lexer.tokenize()
             node = BinopNode(left = node, right = self.bterm(), op = ttype)
@@ -350,7 +350,7 @@ class Parser():
     def cterm(self):
         node = self.bexpr()
         if self.current_token.type == "ASSIGN":
-            print(self.current_token)
+            #print(self.current_token)
             ttype = self.current_token.type
             self.current_token = self.lexer.tokenize()
             node = AssignNode(left = node, right = self.bexpr(), op = ttype)
@@ -359,7 +359,7 @@ class Parser():
     def cexpr(self):
         node = self.cterm()
         while self.current_token.type == "COMP":
-            print(self.current_token)
+            #print(self.current_token)
             ttype = self.current_token.type
             self.current_token = self.lexer.tokenize()
             node = CompNode(left = node, right = self.cterm(), op = ttype)
@@ -375,6 +375,7 @@ def create_dict(var, value):
 def evaluate(ast, state):
     state = state
     node = ast
+    #assign_list = assign_list
     if node.op in ("INT", "ARR", "BOOL"):
         return node.value
     elif node.op == "VAR":
@@ -403,6 +404,7 @@ def evaluate(ast, state):
         return (evaluate(node.left, state) or evaluate(node.right, state))
     elif node.op =="ASSIGN":
         var = node.left.value
+        #var = assign_list.append(var)
         if var in state:
             state[var] = evaluate(node.right, state)
         else:
@@ -432,6 +434,7 @@ class Interpreter():
         self.state = parser.state
         #load the AST by its root node and evaluate recurssively
         self.ast = parser.cparse()
+        
         #print("The biscuit is here", self.current_node)
     def error(self):
         raise Exception("This input is invalid")
@@ -447,7 +450,6 @@ def test(text):
     return c.state
 
 
-'''
 def main():
     contents = []
     while True:
@@ -461,14 +463,16 @@ def main():
     
     text = ' '.join(contents)
 
+    print(text)
     lexer = Lexer(text)
     parser = Parser(lexer)
-    #AST
-    ast = parser.cparse
     interpreter = Interpreter(parser)
-    print(text)
-    print(c)
-
+    interpreter.visit()
+    state = interpreter.state
+    print(interpreter.state)
+    '''
+    for item in set(interpreter.assign_list):
+        print(item, " → ",state[item])
+    '''
 if __name__ == '__main__':
     main()
-'''
