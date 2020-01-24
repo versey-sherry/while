@@ -61,10 +61,10 @@ class Lexer():
             return "assign"
         else:
             self.error()   
-    
     def tokenize(self):
+        relevant = ("+", "-", "*", ";", ":", "=", "<", "¬", "∧","∨", "(", ")", "{", "}")
         while self.current_char is not None:
-            if self.current_char in (" ", "\n", "\r"):
+            if self.current_char.isspace():
                 self.next()
             if self.current_char.isdigit():
                 return Token("INT", self.num())
@@ -111,7 +111,6 @@ class Lexer():
                 return Token("RIGHTPAR", ")")
             if self.current_char == ":":
                 return Token("ASSIGN", self.assign())
-
             #Alphebetical inputs
             if self.current_char.isalpha():
                 result = ''
@@ -271,6 +270,11 @@ class Parser():
             node = self.bexpr()
         elif token.type == "RIGHTPAR":
             self.current_token = self.lexer.tokenize()
+        elif token.type == "LEFTCURL":
+            self.current_token = self.lexer.tokenize()
+            node = self.cexpr()
+        elif token.type == "RIGHTCURL":
+            self.current_token = self.lexer.tokenize()
         elif token.type == "SKIP":
             node = SkipNode(token)
         elif token.type == "WHILE":
@@ -280,9 +284,7 @@ class Parser():
             wfalse = SkipNode(Token("SKIP","skip"))
             if self.current_token.type == "DO":
                 self.current_token = self.lexer.tokenize()
-                if self.current_token.type == "LEFTCURL":
-                    self.current_token = self.lexer.tokenize()
-                    wtrue = self.cexpr()
+                wtrue = self.cexpr()
             return WhileNode(cond, wtrue, wfalse)
 
         elif token.type == "IF":
@@ -373,10 +375,16 @@ def create_dict(var, value):
 def evaluate(ast, state):
     state = state
     node = ast
-    if node.op in ("INT", "ARR", "BOOL", "VAR"):
+    if node.op in ("INT", "ARR", "BOOL"):
         return node.value
+    elif node.op == "VAR":
+        if node.value in state:
+            return state[node.value]
+        else:
+            state = state.update(create_dict(node.value, 0))
+            return 0
     elif node.op == "SKIP":
-        return state
+        state = state
     elif node.op == "PLUS":
         return evaluate(node.left, state)+evaluate(node.right, state)
     elif node.op == "MINUS":
@@ -393,6 +401,31 @@ def evaluate(ast, state):
         return (evaluate(node.left, state) and evaluate(node.right, state))
     elif node.op =="OR":
         return (evaluate(node.left, state) or evaluate(node.right, state))
+    elif node.op =="ASSIGN":
+        var = node.left.value
+        if var in state:
+            state[var] = evaluate(node.right, state)
+        else:
+            state = state.update(create_dict(var, evaluate(node.right, state)))
+    elif node.op == "COMP":
+        evaluate(node.left, state)
+        evaluate(node.right, state)
+    elif node.op == "WHILE":
+        cond = node.cond
+        wtrue = node.wtrue
+        wfalse = node.wfalse
+        while evaluate(cond,state):
+            evaluate(wtrue, state)
+    elif node.op =="IF":
+        cond = node.cond
+        iftrue = node.iftrue
+        iffalse = node.iffalse
+        if evaluate(cond, state):
+            evaluate(iftrue, state)
+        else:
+            evaluate(iffalse, state)
+    else:
+        raise Exception("Nothing I can do bro")
 
 class Interpreter():
     def __init__(self, parser):
@@ -401,7 +434,7 @@ class Interpreter():
         self.ast = parser.cparse()
         #print("The biscuit is here", self.current_node)
     def error(self):
-        raise Error("This input is invalid")
+        raise Exception("This input is invalid")
     def visit(self):
         return evaluate(self.ast, self.state)
 
@@ -409,7 +442,9 @@ def test(text):
     a = Lexer(text)
     b = Parser(a)
     c = Interpreter(b)
-    return c
+    c.visit()
+    print(c.state)
+    return c.state
 
 
 '''
@@ -419,6 +454,7 @@ def main():
         try:
             line = input()
             line = line.strip()
+            line = " ".join(line.split())
         except EOFError:
             break
         contents.append(line)
