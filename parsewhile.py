@@ -372,9 +372,10 @@ class Parser():
 def create_dict(var, value):
     return dict([tuple([var,value])])
 
-def evaluate(ast, state):
+def evaluate(ast, state, print_var):
     state = state
     node = ast
+    print_var = print_var
     #assign_list = assign_list
     if node.op in ("INT", "ARR", "BOOL"):
         return node.value
@@ -387,45 +388,46 @@ def evaluate(ast, state):
     elif node.op == "SKIP":
         state = state
     elif node.op == "PLUS":
-        return evaluate(node.left, state)+evaluate(node.right, state)
+        return evaluate(node.left, state, print_var)+evaluate(node.right, state, print_var)
     elif node.op == "MINUS":
-        return evaluate(node.left, state)-evaluate(node.right, state)
+        return evaluate(node.left, state, print_var)-evaluate(node.right, state, print_var)
     elif node.op == "MUL":
-        return evaluate(node.left, state)*evaluate(node.right, state)
+        return evaluate(node.left, state, print_var)*evaluate(node.right, state, print_var)
     elif node.op == "NOT":
-        return not evaluate(node.ap, state)
+        return not evaluate(node.ap, state, print_var)
     elif node.op =="EQUAL":
-        return evaluate(node.left, state) == evaluate(node.right, state)
+        return evaluate(node.left, state, print_var) == evaluate(node.right, state, print_var)
     elif node.op =="LESSTHAN":
-        return evaluate(node.left, state) < evaluate(node.right, state)
+        return evaluate(node.left, state, print_var) < evaluate(node.right, state, print_var)
     elif node.op =="AND":
-        return (evaluate(node.left, state) and evaluate(node.right, state))
+        return (evaluate(node.left, state, print_var) and evaluate(node.right, state, print_var))
     elif node.op =="OR":
-        return (evaluate(node.left, state) or evaluate(node.right, state))
+        return (evaluate(node.left, state, print_var) or evaluate(node.right, state, print_var))
     elif node.op =="ASSIGN":
         var = node.left.value
+        print_var.append(var)
         #var = assign_list.append(var)
         if var in state:
-            state[var] = evaluate(node.right, state)
+            state[var] = evaluate(node.right, state, print_var)
         else:
-            state = state.update(create_dict(var, evaluate(node.right, state)))
+            state = state.update(create_dict(var, evaluate(node.right, state, print_var)))
     elif node.op == "COMP":
-        evaluate(node.left, state)
-        evaluate(node.right, state)
+        evaluate(node.left, state, print_var)
+        evaluate(node.right, state, print_var)
     elif node.op == "WHILE":
         cond = node.cond
         wtrue = node.wtrue
         wfalse = node.wfalse
-        while evaluate(cond,state):
-            evaluate(wtrue, state)
+        while evaluate(cond,state, print_var):
+            evaluate(wtrue, state, print_var)
     elif node.op =="IF":
         cond = node.cond
         iftrue = node.iftrue
         iffalse = node.iffalse
-        if evaluate(cond, state):
-            evaluate(iftrue, state)
+        if evaluate(cond, state, print_var):
+            evaluate(iftrue, state, print_var)
         else:
-            evaluate(iffalse, state)
+            evaluate(iffalse, state, print_var)
     else:
         raise Exception("Nothing I can do bro")
 
@@ -434,12 +436,12 @@ class Interpreter():
         self.state = parser.state
         #load the AST by its root node and evaluate recurssively
         self.ast = parser.cparse()
-        
+        self.print_var = []
         #print("The biscuit is here", self.current_node)
     def error(self):
         raise Exception("This input is invalid")
     def visit(self):
-        return evaluate(self.ast, self.state)
+        return evaluate(self.ast, self.state, self.print_var)
 
 def test(text):
     a = Lexer(text)
@@ -469,7 +471,9 @@ def main():
     interpreter = Interpreter(parser)
     interpreter.visit()
     state = interpreter.state
-    print(interpreter.state)
+    print_var = interpreter.print_var
+    print(print_var)
+    print(state)
     '''
     for item in set(interpreter.assign_list):
         print(item, " → ",state[item])
