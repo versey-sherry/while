@@ -413,34 +413,42 @@ def evaluate_print(ast, state, print_var, print_state, print_step):
             print("This operation is not supported but do you know that the hearing of the average cat is at least five times keener than that of a human adult?")
     elif node.op == "NOT":
         return not evaluate_print(node.ap, state, print_var, print_state, print_step)
-        print_state.append(copy.deepcopy(state))
+        #print_state.append(copy.deepcopy(state))
     elif node.op =="EQUAL":
-        print("equal", state)
+        #print("equal", state)
         return evaluate_print(node.left, state, print_var, print_state, print_step) == evaluate_print(node.right, state, print_var, print_state, print_step)
-        print_state.append(copy.deepcopy(state))
+        #print_state.append(copy.deepcopy(state))
     elif node.op =="LESSTHAN":
-        print("LESSTHAN", state)
-        print_state.append(copy.deepcopy(state))
+        #print("LESSTHAN", state)
+        #print_state.append(copy.deepcopy(state))
         return evaluate_print(node.left, state, print_var, print_state, print_step) < evaluate_print(node.right, state, print_var, print_state, print_step)
     elif node.op =="AND":
-        print("and", state)
-        print_state.append(copy.deepcopy(state))
+        #print("and", state)
+        #print_state.append(copy.deepcopy(state))
         return (evaluate_print(node.left, state, print_var, print_state, print_step) and evaluate_print(node.right, state, print_var, print_state, print_step))
     elif node.op =="OR":
-        print("or",state)
-        print_state.append(copy.deepcopy(state))
+        #print("or",state)
+        #print_state.append(copy.deepcopy(state))
         return (evaluate_print(node.left, state, print_var, print_state, print_step) or evaluate_print(node.right, state, print_var, print_state, print_step))
     elif node.op == "WHILE":
         cond = node.cond
         wtrue = node.wtrue
         wfalse = node.wfalse
         while evaluate_print(cond, state, print_var, print_state, print_step):
+            temp_var = set(print_var)
+            temp_state = copy.deepcopy(state)
+            temp_state = dict((var, temp_state[var]) for var in temp_var)
+            print_state.append(temp_state)
             evaluate_print(wtrue, state, print_var, print_state, print_step)
     elif node.op =="IF":
         cond = node.cond
         iftrue = node.iftrue
         iffalse = node.iffalse
         if evaluate_print(cond, state, print_var, print_state, print_step):
+            temp_var = set(print_var)
+            temp_state = copy.deepcopy(state)
+            temp_state = dict((var, temp_state[var]) for var in temp_var)
+            print_state.append(temp_state)
             evaluate_print(iftrue, state, print_var, print_state, print_step)
         else:
             evaluate_print(iffalse, state, print_var, print_state, print_step)
