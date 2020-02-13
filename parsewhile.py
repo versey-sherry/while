@@ -6,6 +6,7 @@
 
 #uncomment this when it is all done.
 import sys
+import copy
 sys.tracebacklimit = 0
 
 #lexer
@@ -61,7 +62,6 @@ class Lexer():
         else:
             self.error()   
     def tokenize(self):
-        relevant = ("+", "-", "*", ";", ":", "=", "<", "¬", "∧","∨", "(", ")", "{", "}")
         while self.current_char is not None:
             if self.current_char.isspace():
                 self.next()
@@ -113,7 +113,7 @@ class Lexer():
             #Alphebetical inputs
             if self.current_char.isalpha():
                 result = ''
-                while self.current_char is not None and self.current_char.isalpha():
+                while self.current_char is not None and (self.current_char.isalpha() or self.current_char.isdigit()):
                     result = result+self.current_char
                     self.next()
                 if result == "while":
@@ -134,30 +134,6 @@ class Lexer():
                     return Token("BOOL", False)
                 else:
                     return Token("VAR", result)
-                '''
-                #single charater var
-                if (self.pos +1 == len(self.text) or (not self.text[self.pos+1].isalpha())):
-                    var = self.current_char
-                    self.next()
-                    return Token("VAR", var)
-                
-                if self.pos +1 < len(self.text) and self.text[self.pos+1].isalpha():
-                    if self.current_char == "s":
-                        return Token("SKIP", self.skipskip())
-                    elif self.current_char == "w":
-                        return Token("WHILE", self.twhile())
-                    elif self.current_char == "d":
-                        return Token("DO", self.tdo())
-                    elif self.current_char == "i":
-                        return Token("IF", self.tif())
-                    elif self.current_char == "t" and self.text[self.pos+1] =="h":
-                        return Token("THEN", self.tthen())
-                    elif self.current_char == "e":
-                        return Token("ELSE", self.telse())
-                    elif self.current_char in ('t','f'):
-                        return Token("BOOL", self.bool())
-                    elif 
-                    '''
             self.error()
         return(Token("EOF", None))
 
@@ -283,9 +259,12 @@ class Parser():
             wfalse = SkipNode(Token("SKIP","skip"))
             if self.current_token.type == "DO":
                 self.current_token = self.lexer.tokenize()
-                wtrue = self.cexpr()
-            return WhileNode(cond, wtrue, wfalse)
+                if self.current_token == "LEFTCURL":
+                    wtrue = self.cexpr()
+                else:
+                    wtrue = self.cterm()
 
+            return WhileNode(cond, wtrue, wfalse)
         elif token.type == "IF":
             self.current_token = self.lexer.tokenize()
             cond = self.bexpr()
@@ -371,11 +350,28 @@ class Parser():
 def create_dict(var, value):
     return dict([tuple([var,value])])
 
-def evaluate(ast, state, print_var):
+#Helper function to figure out tree structure and whether the program prints bottom up
+def print_tree(ast):
+    node = ast
+    if node.op in ("INT", "ARR", "BOOL", "VAR", "SKIP", "NOT", "WHILE", "IF"):
+        print(node, '\n')
+        return node
+    elif node.op in ("PLUS", "MINUS", "MUL","EQUAL","LESSTHAN", "AND", "OR", "ASSIGN","COMP"):
+        print(node, '{',print_tree(node.left), print_tree(node.right),'}', '\n')
+        return node
+    else:
+        raise Exception("Nothing I can do bro")
+
+def evaluate_print(ast, state, print_var, print_state, print_step):
     state = state
     node = ast
+    #This is to store all the variables that need printing, in case var without declaration
     print_var = print_var
-    #assign_list = assign_list
+    #This is to store all the states
+    print_state = print_state
+    #This is to store all the commands that need printing
+    print_step = print_step
+    #These are the fundamentals that won't add to any lists above
     if node.op in ("INT", "ARR", "BOOL"):
         return node.value
     elif node.op == "VAR":
@@ -386,56 +382,68 @@ def evaluate(ast, state, print_var):
             return 0
     elif node.op == "SKIP":
         state = state
+        print_state.append(copy.deepcopy(state))
+    elif node.op == "COMP":
+        evaluate_print(node.left, state, print_var, print_state, print_step)
+        #print("Comp1", state)
+        evaluate_print(node.right, state, print_var, print_state, print_step)
+        #print("Comp2", state)
+    elif node.op =="ASSIGN":
+        var = node.left.value
+        print_var.append(var)
+        if var in state:
+            state[var] = evaluate_print(node.right, state, print_var, print_state, print_step)
+        else:
+            state.update(create_dict(var, evaluate_print(node.right, state, print_var, print_state, print_step)))
+        print_state.append(copy.deepcopy(state))
     elif node.op == "PLUS":
         try:
-            return evaluate(node.left, state, print_var)+evaluate(node.right, state, print_var)
+            return evaluate_print(node.left, state, print_var, print_state, print_step)+evaluate_print(node.right, state, print_var, print_state, print_step)
         except TypeError:
             print("This operation is not supported but do you know that cats can rotate their ears 180 degrees?")
     elif node.op == "MINUS":
         try:
-            return evaluate(node.left, state, print_var)-evaluate(node.right, state, print_var)
+            return evaluate_print(node.left, state, print_var, print_state, print_step)-evaluate_print(node.right, state, print_var, print_state, print_step)
         except TypeError:
             print("This operation is not supported but do you know that meows are not innate cat language? They developed them to communicate with humans!")
     elif node.op == "MUL":
         try:
-            return evaluate(node.left, state, print_var)*evaluate(node.right, state, print_var)
+            return evaluate_print(node.left, state, print_var, print_state, print_step)*evaluate_print(node.right, state, print_var, print_state, print_step)
         except TypeError:
             print("This operation is not supported but do you know that the hearing of the average cat is at least five times keener than that of a human adult?")
     elif node.op == "NOT":
-        return not evaluate(node.ap, state, print_var)
+        return not evaluate_print(node.ap, state, print_var, print_state, print_step)
+        print_state.append(copy.deepcopy(state))
     elif node.op =="EQUAL":
-        return evaluate(node.left, state, print_var) == evaluate(node.right, state, print_var)
+        print("equal", state)
+        return evaluate_print(node.left, state, print_var, print_state, print_step) == evaluate_print(node.right, state, print_var, print_state, print_step)
+        print_state.append(copy.deepcopy(state))
     elif node.op =="LESSTHAN":
-        return evaluate(node.left, state, print_var) < evaluate(node.right, state, print_var)
+        print("LESSTHAN", state)
+        print_state.append(copy.deepcopy(state))
+        return evaluate_print(node.left, state, print_var, print_state, print_step) < evaluate_print(node.right, state, print_var, print_state, print_step)
     elif node.op =="AND":
-        return (evaluate(node.left, state, print_var) and evaluate(node.right, state, print_var))
+        print("and", state)
+        print_state.append(copy.deepcopy(state))
+        return (evaluate_print(node.left, state, print_var, print_state, print_step) and evaluate_print(node.right, state, print_var, print_state, print_step))
     elif node.op =="OR":
-        return (evaluate(node.left, state, print_var) or evaluate(node.right, state, print_var))
-    elif node.op =="ASSIGN":
-        var = node.left.value
-        print_var.append(var)
-        #var = assign_list.append(var)
-        if var in state:
-            state[var] = evaluate(node.right, state, print_var)
-        else:
-            state = state.update(create_dict(var, evaluate(node.right, state, print_var)))
-    elif node.op == "COMP":
-        evaluate(node.left, state, print_var)
-        evaluate(node.right, state, print_var)
+        print("or",state)
+        print_state.append(copy.deepcopy(state))
+        return (evaluate_print(node.left, state, print_var, print_state, print_step) or evaluate_print(node.right, state, print_var, print_state, print_step))
     elif node.op == "WHILE":
         cond = node.cond
         wtrue = node.wtrue
         wfalse = node.wfalse
-        while evaluate(cond,state, print_var):
-            evaluate(wtrue, state, print_var)
+        while evaluate_print(cond, state, print_var, print_state, print_step):
+            evaluate_print(wtrue, state, print_var, print_state, print_step)
     elif node.op =="IF":
         cond = node.cond
         iftrue = node.iftrue
         iffalse = node.iffalse
-        if evaluate(cond, state, print_var):
-            evaluate(iftrue, state, print_var)
+        if evaluate_print(cond, state, print_var, print_state, print_step):
+            evaluate_print(iftrue, state, print_var, print_state, print_step)
         else:
-            evaluate(iffalse, state, print_var)
+            evaluate_print(iffalse, state, print_var, print_state, print_step)
     else:
         raise Exception("Nothing I can do bro")
 
@@ -445,6 +453,8 @@ class Interpreter():
         #load the AST by its root node and evaluate recurssively
         self.ast = parser.cparse()
         self.print_var = []
+        self.print_state = []
+        self.print_step = []
         #print("The biscuit is here", self.current_node)
     def error(self):
         raise Exception("This input is invalid")
@@ -455,9 +465,7 @@ def test(text):
     a = Lexer(text)
     b = Parser(a)
     c = Interpreter(b)
-    c.visit()
-    print(c.state)
-    return c.state
+    return c
 
 
 def main():
@@ -472,6 +480,7 @@ def main():
         contents.append(line)
     
     text = ' '.join(contents)
+    text = ' '.join(text.split())
 
     #print(text)
     lexer = Lexer(text)
@@ -482,7 +491,7 @@ def main():
     print_var = set(interpreter.print_var)
     #print(print_var)
     output_string = []
-    for item in print_var:
+    for item in sorted(print_var):
         separator = " "
         output_string.append(separator.join([item, "→",str(state[item])]))
     print("{", ", ".join(output_string), "}", sep = "")
