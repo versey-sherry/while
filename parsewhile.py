@@ -406,7 +406,6 @@ def evaluate_print(ast, state, print_var, print_state, print_step):
     #This is to store all the commands that need printing
     print_step = print_step
     skip_token = Token("SKIP","skip")
-
     #These are the fundamentals that won't add to any lists above
     if node.op in ("INT", "ARR", "BOOL"):
         return node.value
@@ -424,7 +423,7 @@ def evaluate_print(ast, state, print_var, print_state, print_step):
         print_state.append(temp_state)
     elif node.op == "COMP":
         evaluate_print(node.left, state, print_var, print_state, print_step)
-        node.left = SkipNode(skip_token)
+        #node.left = SkipNode(skip_token)
         #print("Comp1", state)
         evaluate_print(node.right, state, print_var, print_state, print_step)
         #print("Comp2", state)
