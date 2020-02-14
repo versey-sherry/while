@@ -379,8 +379,10 @@ def switch(argument):
 
 def print_command(ast):
     node = ast
-    if node.op in ("INT", "ARR", "BOOL", "VAR", "SKIP"):
+    if node.op in ("INT", "ARR", "BOOL", "VAR"):
         return node.value
+    elif node.op in ("SKIP"):
+        return "skip"
     elif node.op in ("PLUS", "MINUS", "MUL","EQUAL","LESSTHAN", "AND", "OR"):
         return (''.join(["(",str(print_command(node.left)), switch(node.op), str(print_command(node.right)), ")"]))
     elif node.op in ("ASSIGN"):
@@ -396,6 +398,8 @@ def print_command(ast):
     else:
         raise Exception("Nothing I can do bro")
 
+def skipified():
+    pass
 def evaluate_print(ast, state, print_var, print_state, print_step):
     state = state
     node = ast
@@ -405,7 +409,6 @@ def evaluate_print(ast, state, print_var, print_state, print_step):
     print_state = print_state
     #This is to store all the commands that need printing
     print_step = print_step
-    skip_token = Token("SKIP","skip")
     #These are the fundamentals that won't add to any lists above
     if node.op in ("INT", "ARR", "BOOL"):
         return node.value
@@ -422,12 +425,18 @@ def evaluate_print(ast, state, print_var, print_state, print_step):
         temp_state = dict((var, temp_state[var]) for var in temp_var)
         print_state.append(temp_state)
     elif node.op == "COMP":
-        evaluate_print(node.left, state, print_var, print_state, print_step)
-        #node.left = SkipNode(skip_token)
-        #print("Comp1", state)
+        if node.left.op != "SKIP":
+            #delete the skip node
+            evaluate_print(node.left, state, print_var, print_state, print_step)
+            print("before node", node.left)
+            node.left.op = "SKIP"
+            print("after value", node.left.op)
+            print("after node", node.left)
+        else:
+            node = node.right
         evaluate_print(node.right, state, print_var, print_state, print_step)
         #print("Comp2", state)
-    elif node.op =="ASSIGN":
+    elif node.op == "ASSIGN":
         var = node.left.value
         print_var.append(var)
         if var in state:
@@ -438,6 +447,9 @@ def evaluate_print(ast, state, print_var, print_state, print_step):
         temp_state = copy.deepcopy(state)
         temp_state = dict((var, temp_state[var]) for var in temp_var)
         print_state.append(temp_state)
+        print("before", node)
+        node.op = 'SKIP'
+
     elif node.op == "PLUS":
         try:
             return evaluate_print(node.left, state, print_var, print_state, print_step)+evaluate_print(node.right, state, print_var, print_state, print_step)
