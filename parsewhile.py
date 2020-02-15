@@ -385,7 +385,20 @@ def print_command(node):
     else:
         raise Exception("Pretty sure you made a mistake")
 
-def evaluate_print(ast, state, print_var, print_state, print_step):
+#helper class to do string mantipulation
+class Sstr():
+    def __init__(self, string):
+        self.string = string
+    def __add__(self, other):
+        return (self.string + other.string)
+    def __sub__(self, other):
+        return (self.string.replace(other.string, ''))
+    def super_copy(self):
+        return Sstr(self.string)
+#root = parsewhile.test("if (true) then x:=1 else zir9 := 2")
+#parsewhile.evaluate_print(root.ast, root.state, root.print_var, root.print_state, root.print_step)
+
+def evaluate_print(ast, state, print_var, print_state, print_step, initial_step):
     state = state
     node = ast
     #This is to store all the variables that need printing, in case var without declaration
@@ -393,6 +406,8 @@ def evaluate_print(ast, state, print_var, print_state, print_step):
     #This is to store all the states
     print_state = print_state
     print_step = print_step
+    init_step = initial_step
+
     #These are the fundamentals that won't add to any lists above
     if node.op in ("INT", "ARR", "BOOL"):
         return node.value
@@ -404,71 +419,83 @@ def evaluate_print(ast, state, print_var, print_state, print_step):
             return 0
     elif node.op == "SKIP":
         state = state
-        print_state.append(copy.deepcopy(state))
-    elif node.op == "COMP":
-        evaluate_print(node.left, state, print_var, print_state, print_step)
         temp_var = set(print_var)
         temp_state = copy.deepcopy(state)
         temp_state = dict((var, temp_state[var]) for var in temp_var)
         print_state.append(temp_state)
+        #temp_step = Sstr(str(print_command(node)))
+        print('skip', init_step)
+        #print_step.append([init_step - temp_step])
+    elif node.op == "COMP":
+        evaluate_print(node.left, state, print_var, print_state, print_step, initial_step)
+        temp_var = set(print_var)
+        temp_state = copy.deepcopy(state)
+        temp_state = dict((var, temp_state[var]) for var in temp_var)
+        print_state.append(temp_state)
+        #temp_step = Sstr(str(print_command(node.left)))
+        print('comp', init_step)
+        #print_step.append([init_step - temp_step])
         #print("Comp1", state)
-        evaluate_print(node.right, state, print_var, print_state, print_step)
+        evaluate_print(node.right, state, print_var, print_state, print_step, initial_step)
     elif node.op =="ASSIGN":
         var = node.left.value
         print_var.append(var)
         if var in state:
-            state[var] = evaluate_print(node.right, state, print_var, print_state, print_step)
+            state[var] = evaluate_print(node.right, state, print_var, print_state, print_step, initial_step)
         else:
-            state.update(create_dict(var, evaluate_print(node.right, state, print_var, print_state, print_step)))
+            state.update(create_dict(var, evaluate_print(node.right, state, print_var, print_state, print_step, initial_step)))
+            
         temp_var = set(print_var)
         temp_state = copy.deepcopy(state)
         temp_state = dict((var, temp_state[var]) for var in temp_var)
         print_state.append(temp_state)
-
+        #temp_step = Sstr(str(print_command(node)))
+        print('assign', init_step)
+        #print_step.append([init_step - temp_step])
     elif node.op == "PLUS":
         try:
-            return evaluate_print(node.left, state, print_var, print_state, print_step)+evaluate_print(node.right, state, print_var, print_state, print_step)
+            return evaluate_print(node.left, state, print_var, print_state, print_step, initial_step)+evaluate_print(node.right, state, print_var, print_state, print_step, initial_step)
         except TypeError:
             print("This operation is not supported but do you know that cats can rotate their ears 180 degrees?")
     elif node.op == "MINUS":
         try:
-            return evaluate_print(node.left, state, print_var, print_state, print_step)-evaluate_print(node.right, state, print_var, print_state, print_step)
+            return evaluate_print(node.left, state, print_var, print_state, print_step, initial_step)-evaluate_print(node.right, state, print_var, print_state, print_step, initial_step)
         except TypeError:
             print("This operation is not supported but do you know that meows are not innate cat language? They developed them to communicate with humans!")
     elif node.op == "MUL":
         try:
-            return evaluate_print(node.left, state, print_var, print_state, print_step)*evaluate_print(node.right, state, print_var, print_state, print_step)
+            return evaluate_print(node.left, state, print_var, print_state, print_step, initial_step)*evaluate_print(node.right, state, print_var, print_state, print_step, initial_step)
         except TypeError:
             print("This operation is not supported but do you know that the hearing of the average cat is at least five times keener than that of a human adult?")
     elif node.op == "NOT":
-        return not evaluate_print(node.ap, state, print_var, print_state, print_step)
+        return not evaluate_print(node.ap, state, print_var, print_state, print_step, initial_step)
         #print_state.append(copy.deepcopy(state))
     elif node.op =="EQUAL":
         #print("equal", state)
-        return evaluate_print(node.left, state, print_var, print_state, print_step) == evaluate_print(node.right, state, print_var, print_state, print_step)
+        return evaluate_print(node.left, state, print_var, print_state, print_step, initial_step) == evaluate_print(node.right, state, print_var, print_state, print_step, initial_step)
         #print_state.append(copy.deepcopy(state))
     elif node.op =="LESSTHAN":
         #print("LESSTHAN", state)
         #print_state.append(copy.deepcopy(state))
-        return evaluate_print(node.left, state, print_var, print_state, print_step) < evaluate_print(node.right, state, print_var, print_state, print_step)
+        return evaluate_print(node.left, state, print_var, print_state, print_step, initial_step) < evaluate_print(node.right, state, print_var, print_state, print_step, initial_step)
     elif node.op =="AND":
         #print("and", state)
         #print_state.append(copy.deepcopy(state))
-        return (evaluate_print(node.left, state, print_var, print_state, print_step) and evaluate_print(node.right, state, print_var, print_state, print_step))
+        return (evaluate_print(node.left, state, print_var, print_state, print_step, initial_step) and evaluate_print(node.right, state, print_var, print_state, print_step, initial_step))
     elif node.op =="OR":
         #print("or",state)
         #print_state.append(copy.deepcopy(state))
-        return (evaluate_print(node.left, state, print_var, print_state, print_step) or evaluate_print(node.right, state, print_var, print_state, print_step))
+        return (evaluate_print(node.left, state, print_var, print_state, print_step, initial_step) or evaluate_print(node.right, state, print_var, print_state, print_step, initial_step))
     elif node.op == "WHILE":
         cond = node.cond
         wtrue = node.wtrue
         wfalse = node.wfalse
-        while evaluate_print(cond, state, print_var, print_state, print_step):
+        while evaluate_print(cond, state, print_var, print_state, print_step, initial_step):
             temp_var = set(print_var)
             temp_state = copy.deepcopy(state)
             temp_state = dict((var, temp_state[var]) for var in temp_var)
             print_state.append(temp_state)
-            evaluate_print(wtrue, state, print_var, print_state, print_step)
+            evaluate_print(wtrue, state, print_var, print_state, print_step, initial_step)
             temp_var = set(print_var)
             temp_state = copy.deepcopy(state)
             temp_state = dict((var, temp_state[var]) for var in temp_var)
@@ -481,19 +508,19 @@ def evaluate_print(ast, state, print_var, print_state, print_step):
         cond = node.cond
         iftrue = node.iftrue
         iffalse = node.iffalse
-        if evaluate_print(cond, state, print_var, print_state, print_step):
+        if evaluate_print(cond, state, print_var, print_state, print_step, initial_step):
             #only record the state before execution
             temp_var = set(print_var)
             temp_state = copy.deepcopy(state)
             temp_state = dict((var, temp_state[var]) for var in temp_var)
             print_state.append(temp_state)
-            evaluate_print(iftrue, state, print_var, print_state, print_step)
+            evaluate_print(iftrue, state, print_var, print_state, print_step, initial_step)
         else:
             temp_var = set(print_var)
             temp_state = copy.deepcopy(state)
             temp_state = dict((var, temp_state[var]) for var in temp_var)
             print_state.append(temp_state)
-            evaluate_print(iffalse, state, print_var, print_state, print_step)
+            evaluate_print(iffalse, state, print_var, print_state, print_step, initial_step)
     else:
         raise Exception("Nothing I can do bro")
 
@@ -505,6 +532,7 @@ class Interpreter():
         self.print_var = []
         self.print_state = []
         self.print_step = []
+        self.initial_step = print_command(self.ast)
         #print("The biscuit is here", self.current_node)
     def error(self):
         raise Exception("This input is invalid")
