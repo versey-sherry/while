@@ -422,9 +422,8 @@ def evaluate_print(ast, state, print_var, print_state, print_step, init_step):
         temp_state = dict((var, temp_state[var]) for var in temp_var)
         print_state.append(temp_state)
         temp_step = Sstr(str(print_command(node)))
-        print_step.append([Sstr(init_step) - temp_step])
-        init_step = Sstr(init_step) - temp_step
-        print('skip', init_step)
+        print_step.append([Sstr(Sstr(init_step) - temp_step) - Sstr("; ")])
+        init_step = Sstr(Sstr(init_step) - temp_step) - Sstr("; ")
     elif node.op == "COMP":
         evaluate_print(node.left, state, print_var, print_state, print_step, init_step)
         temp_var = set(print_var)
@@ -432,9 +431,9 @@ def evaluate_print(ast, state, print_var, print_state, print_step, init_step):
         temp_state = dict((var, temp_state[var]) for var in temp_var)
         print_state.append(temp_state)
         temp_step = Sstr(str(print_command(node.left)))
-        print_step.append([Sstr(init_step) - temp_step])
-        init_step = Sstr(init_step) - temp_step
-        print('comp', init_step)
+        #this init is the init at the start of calling comp node
+        print_step.append([str(Sstr(Sstr(init_step) - temp_step) - Sstr("; "))])
+        init_step = Sstr(Sstr(init_step) - temp_step) - Sstr("; ")
         #print("Comp1", state)
         evaluate_print(node.right, state, print_var, print_state, print_step, init_step)
     elif node.op =="ASSIGN":
@@ -449,8 +448,9 @@ def evaluate_print(ast, state, print_var, print_state, print_step, init_step):
         temp_state = dict((var, temp_state[var]) for var in temp_var)
         print_state.append(temp_state)
         temp_step = Sstr(str(print_command(node)))
-        print_step.append([Sstr(init_step) - temp_step])
-        init_step = Sstr(init_step) - temp_step
+        print_step.append(["skip; "+ str(Sstr(Sstr(init_step) - temp_step) - Sstr("; "))])
+        init_step = Sstr(Sstr(init_step) - temp_step) - Sstr("; ")
+
     elif node.op == "PLUS":
         try:
             return evaluate_print(node.left, state, print_var, print_state, print_step, init_step)+evaluate_print(node.right, state, print_var, print_state, print_step, init_step)
@@ -503,16 +503,16 @@ def evaluate_print(ast, state, print_var, print_state, print_step, init_step):
             print_state.append([temp_state])
             #"node" is the whole while node
             temp_step = Sstr(str(print_command(node.wtrue)))
-            print_step.append([Sstr(init_step) - temp_step])
-            init_step = Sstr(init_step) - temp_step
+            print_step.append([Sstr(Sstr(init_step) - temp_step) - Sstr("; ")])
+            init_step = Sstr(Sstr(init_step) - temp_step) - Sstr("; ")
         temp_var = set(print_var)
         temp_state = copy.deepcopy(state)
         temp_state = dict((var, temp_state[var]) for var in temp_var)
         print_state.append(temp_state)
         #"node" is the whole while node
         temp_step = Sstr(print_command(node))
-        print_step.append(Sstr(init_step) - temp_step)
-        init_step = Sstr(init_step) - temp_step
+        print_step.append([Sstr(Sstr(init_step) - temp_step) - Sstr("; ") + "skip; "])
+        init_step = Sstr(Sstr(init_step) - temp_step) - Sstr("; ")
     elif node.op =="IF":
         cond = node.cond
         iftrue = node.iftrue
@@ -588,6 +588,10 @@ def main():
         separator = " "
         output_string.append(separator.join([item, "→",str(state[item])]))
     print("{", ", ".join(output_string), "}", sep = "")
+
+#if skip is the first one do something
+#repalce all last ones to "skip"
+
 
 if __name__ == '__main__':
     main()
