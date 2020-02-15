@@ -138,10 +138,21 @@ class Lexer():
         return(Token("EOF", None))
 
 #create all the needed nodes
+class BaseNode():
+    def__init__(self):
+        self.left = None
+        self.right = None
+    def copy_node(self):
+        node = BaseNode()
+        node.left = self.left
+        node.right = self.right
+        return node
+
 class IntNode():
     def __init__(self, token):
         self.value = token.value
         self.op = token.type
+
 class ArrNode():
     def __init__(self, token):
         self.value = token.value
@@ -198,6 +209,7 @@ class IfNode():
         self.iftrue = iftrue
         self.iffalse = iffalse
         self.op = "IF"
+
 
 #lexer tokenize everything with the proper token, each time object.tokenize is called, the next value gets tokenized
 #Parser should parse out a AST.
@@ -376,7 +388,6 @@ def switch(argument):
     "COMP":';'}
     return switcher.get(argument, "you sure?")
 
-
 def print_command(ast):
     node = ast
     if node.op in ("INT", "ARR", "BOOL", "VAR"):
@@ -398,11 +409,10 @@ def print_command(ast):
     else:
         raise Exception("Nothing I can do bro")
 
-def skipified():
-    pass
 def evaluate_print(ast, state, print_var, print_state, print_step):
     state = state
     node = ast
+    root = ast
     #This is to store all the variables that need printing, in case var without declaration
     print_var = print_var
     #This is to store all the states
@@ -424,14 +434,15 @@ def evaluate_print(ast, state, print_var, print_state, print_step):
         temp_state = copy.deepcopy(state)
         temp_state = dict((var, temp_state[var]) for var in temp_var)
         print_state.append(temp_state)
+
     elif node.op == "COMP":
         if node.left.op != "SKIP":
             #delete the skip node
             evaluate_print(node.left, state, print_var, print_state, print_step)
-            print("before node", node.left)
             node.left.op = "SKIP"
-            print("after value", node.left.op)
-            print("after node", node.left)
+            print("root is before",root)
+            print(print_command(root))
+            #print("root is after",root)
         else:
             node = node.right
         evaluate_print(node.right, state, print_var, print_state, print_step)
@@ -447,7 +458,6 @@ def evaluate_print(ast, state, print_var, print_state, print_step):
         temp_state = copy.deepcopy(state)
         temp_state = dict((var, temp_state[var]) for var in temp_var)
         print_state.append(temp_state)
-        print("before", node)
         node.op = 'SKIP'
 
     elif node.op == "PLUS":
