@@ -552,8 +552,7 @@ class Interpreter():
     def error(self):
         raise Exception("This input is invalid")
     def visit(self):
-        return evaluate_print(self.ast, self.state, self.print_var, self.print_state, self.print_step)
-
+        return evaluate_print(self.ast, self.state, self.print_var, self.print_state, self.print_step, self.init_step)
 #returns an interpreter object for debugging
 def test(text):
     a = Lexer(text)
@@ -574,23 +573,44 @@ def main():
     
     text = ' '.join(contents)
     text = ' '.join(text.split())
+    #check if the first command is skip
 
     #print(text)
     lexer = Lexer(text)
     parser = Parser(lexer)
     interpreter = Interpreter(parser)
     interpreter.visit()
-    state = interpreter.state
-    print_var = set(interpreter.print_var)
+
+    step_list = interpreter.print_step
+    #flattened the nested list
+    step_list = [item for sublist in step_list for item in sublist]
+    state_list = interpreter.print_state
+    if text[0:5] == "skip;" or text[0:6] == "skip ;":
+        del step_list[0]
+        del state_list[0]
+    
+    step_list[-1] = 'skip'
+    #print(step_list)
+    #print(state_list)
     #print(print_var)
+    for i in range(len(state_list)):
+        output_string = []
+        for key in sorted(state_list[i]):
+            separator = " "
+            output_string.append(separator.join([key, "→", str(state_list[i][key])]))
+
+        state_string = ''.join(["{", ", ".join(output_string), "}"])
+        step_string = ' '.join(['⇒', step_list[i]])
+        print(step_string, state_string, sep = ', ')
+        
+        '''
+
     output_string = []
     for item in sorted(print_var):
         separator = " "
         output_string.append(separator.join([item, "→",str(state[item])]))
     print("{", ", ".join(output_string), "}", sep = "")
-
-#if skip is the first one do something
-#repalce all last ones to "skip"
+'''
 
 
 if __name__ == '__main__':
