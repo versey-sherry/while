@@ -138,21 +138,10 @@ class Lexer():
         return(Token("EOF", None))
 
 #create all the needed nodes
-class BaseNode():
-    def__init__(self):
-        self.left = None
-        self.right = None
-    def copy_node(self):
-        node = BaseNode()
-        node.left = self.left
-        node.right = self.right
-        return node
-
 class IntNode():
     def __init__(self, token):
         self.value = token.value
         self.op = token.type
-
 class ArrNode():
     def __init__(self, token):
         self.value = token.value
@@ -209,7 +198,6 @@ class IfNode():
         self.iftrue = iftrue
         self.iffalse = iffalse
         self.op = "IF"
-
 
 #lexer tokenize everything with the proper token, each time object.tokenize is called, the next value gets tokenized
 #Parser should parse out a AST.
@@ -362,62 +350,48 @@ class Parser():
 def create_dict(var, value):
     return dict([tuple([var,value])])
 
-#Helper function to figure out tree structure and whether the program prints bottom up
-def print_tree(ast):
-    node = ast
-    if node.op in ("INT", "ARR", "BOOL", "VAR", "SKIP", "NOT", "WHILE", "IF"):
-        print(node, '\n')
-        return node
-    elif node.op in ("PLUS", "MINUS", "MUL","EQUAL","LESSTHAN", "AND", "OR", "ASSIGN","COMP"):
-        print(node, '{',print_tree(node.left), print_tree(node.right),'}', '\n')
-        return node
-    else:
-        raise Exception("Nothing I can do bro")
-
-def switch(argument):
-    switcher = {
-    "PLUS": '+', 
+#Helper fuctions to do match:
+def switch(op):
+    cases = {
+    "PLUS":'+', 
     "MINUS":'-', 
     "MUL":'*',
     "EQUAL":'=',
-    "NOT":'¬',
     "LESSTHAN":'<', 
     "AND":'∨', 
     "OR":'∧', 
     "ASSIGN":':=',
-    "COMP":';'}
-    return switcher.get(argument, "you sure?")
+    "COMP":';',
+    "NOT":'¬',
+    }
+    return cases.get(op, "You sure?")
 
-def print_command(ast):
-    node = ast
-    if node.op in ("INT", "ARR", "BOOL", "VAR"):
+#Helper function that prints recursively
+def print_command(node):
+    if node.op in ("INT", "ARR", "BOOL", "VAR", "SKIP"):
         return node.value
-    elif node.op in ("SKIP"):
-        return "skip"
     elif node.op in ("PLUS", "MINUS", "MUL","EQUAL","LESSTHAN", "AND", "OR"):
-        return (''.join(["(",str(print_command(node.left)), switch(node.op), str(print_command(node.right)), ")"]))
-    elif node.op in ("ASSIGN"):
-        return (' '.join([str(print_command(node.left)), switch(node.op), str(print_command(node.right))]))
+        return ''.join(['(',str(print_command(node.left)), switch(node.op), str(print_command(node.right)), ')'])
     elif node.op in ("NOT"):
-        return (''.join([switch(node.op), str(print_command(node.ap))]))
+        return ''.join([switch(node.op),str(print_command(node.ap))])
+    elif node.op in ("ASSIGN"):
+        return ' '.join([str(print_command(node.left)), switch(node.op), str(print_command(node.right))])
     elif node.op in ("COMP"):
-        return (' '.join([''.join([str(print_command(node.left)), switch(node.op)]), str(print_command(node.right))]))
+        return ' '.join([''.join([str(print_command(node.left)), switch(node.op)]), str(print_command(node.right))]) 
     elif node.op in ("WHILE"):
-        return (' '.join(['while', print_command(node.cond), 'do',"{", print_command(node.wtrue), "}"]))
+        return ' '.join(['while',str(print_command(node.cond)),'do', '{', str(print_command(node.wtrue)), '}'])
     elif node.op in ("IF"):
-        return(' '.join(['if', print_command(node.cond), 'then',"{",print_command(node.wtrue),"}", 'else', "{", print_command(node.wtrue),"}"]))
+        return ' '.join(['if',str(print_command(node.cond)),'then', '{', str(print_command(node.iftrue)), '}', 'else', '{', str(print_command(node.iffalse)) , '}'])
     else:
-        raise Exception("Nothing I can do bro")
+        raise Exception("Pretty sure you made a mistake")
 
 def evaluate_print(ast, state, print_var, print_state, print_step):
     state = state
     node = ast
-    root = ast
     #This is to store all the variables that need printing, in case var without declaration
     print_var = print_var
     #This is to store all the states
     print_state = print_state
-    #This is to store all the commands that need printing
     print_step = print_step
     #These are the fundamentals that won't add to any lists above
     if node.op in ("INT", "ARR", "BOOL"):
@@ -430,24 +404,16 @@ def evaluate_print(ast, state, print_var, print_state, print_step):
             return 0
     elif node.op == "SKIP":
         state = state
+        print_state.append(copy.deepcopy(state))
+    elif node.op == "COMP":
+        evaluate_print(node.left, state, print_var, print_state, print_step)
         temp_var = set(print_var)
         temp_state = copy.deepcopy(state)
         temp_state = dict((var, temp_state[var]) for var in temp_var)
         print_state.append(temp_state)
-
-    elif node.op == "COMP":
-        if node.left.op != "SKIP":
-            #delete the skip node
-            evaluate_print(node.left, state, print_var, print_state, print_step)
-            node.left.op = "SKIP"
-            print("root is before",root)
-            print(print_command(root))
-            #print("root is after",root)
-        else:
-            node = node.right
+        #print("Comp1", state)
         evaluate_print(node.right, state, print_var, print_state, print_step)
-        #print("Comp2", state)
-    elif node.op == "ASSIGN":
+    elif node.op =="ASSIGN":
         var = node.left.value
         print_var.append(var)
         if var in state:
@@ -458,7 +424,6 @@ def evaluate_print(ast, state, print_var, print_state, print_step):
         temp_state = copy.deepcopy(state)
         temp_state = dict((var, temp_state[var]) for var in temp_var)
         print_state.append(temp_state)
-        node.op = 'SKIP'
 
     elif node.op == "PLUS":
         try:
@@ -504,17 +469,30 @@ def evaluate_print(ast, state, print_var, print_state, print_step):
             temp_state = dict((var, temp_state[var]) for var in temp_var)
             print_state.append(temp_state)
             evaluate_print(wtrue, state, print_var, print_state, print_step)
+            temp_var = set(print_var)
+            temp_state = copy.deepcopy(state)
+            temp_state = dict((var, temp_state[var]) for var in temp_var)
+            print_state.append(temp_state)
+        temp_var = set(print_var)
+        temp_state = copy.deepcopy(state)
+        temp_state = dict((var, temp_state[var]) for var in temp_var)
+        print_state.append(temp_state)
     elif node.op =="IF":
         cond = node.cond
         iftrue = node.iftrue
         iffalse = node.iffalse
         if evaluate_print(cond, state, print_var, print_state, print_step):
+            #only record the state before execution
             temp_var = set(print_var)
             temp_state = copy.deepcopy(state)
             temp_state = dict((var, temp_state[var]) for var in temp_var)
             print_state.append(temp_state)
             evaluate_print(iftrue, state, print_var, print_state, print_step)
         else:
+            temp_var = set(print_var)
+            temp_state = copy.deepcopy(state)
+            temp_state = dict((var, temp_state[var]) for var in temp_var)
+            print_state.append(temp_state)
             evaluate_print(iffalse, state, print_var, print_state, print_step)
     else:
         raise Exception("Nothing I can do bro")
@@ -531,14 +509,14 @@ class Interpreter():
     def error(self):
         raise Exception("This input is invalid")
     def visit(self):
-        return evaluate(self.ast, self.state, self.print_var)
+        return evaluate_print(self.ast, self.state, self.print_var, self.print_state, self.print_step)
 
+#returns an interpreter object for debugging
 def test(text):
     a = Lexer(text)
     b = Parser(a)
     c = Interpreter(b)
     return c
-
 
 def main():
     contents = []
