@@ -368,8 +368,10 @@ def switch(op):
 
 #Helper function that prints recursively
 def print_command(node):
-    if node.op in ("INT", "ARR", "BOOL", "VAR", "SKIP"):
+    if node.op in ("INT", "ARR", "VAR", "SKIP"):
         return node.value
+    elif node.op in ("BOOL"):
+        return str(node.value).lower()
     elif node.op in ("PLUS", "MINUS", "MUL","EQUAL","LESSTHAN", "AND", "OR"):
         return ''.join(['(',str(print_command(node.left)), switch(node.op), str(print_command(node.right)), ')'])
     elif node.op in ("NOT"):
@@ -489,7 +491,11 @@ def evaluate_print(ast, state, print_var, print_state, print_step, init_step):
         cond = node.cond
         wtrue = node.wtrue
         wfalse = node.wfalse
+        sentinel = 0
         while evaluate_print(cond, state, print_var, print_state, print_step, init_step):
+            sentinel = sentinel+1
+            if sentinel > 60000-1:
+                break
             temp_var = set(print_var)
             temp_state = copy.deepcopy(state)
             temp_state = dict((var, temp_state[var]) for var in temp_var)
@@ -500,7 +506,7 @@ def evaluate_print(ast, state, print_var, print_state, print_step, init_step):
             temp_var = set(print_var)
             temp_state = copy.deepcopy(state)
             temp_state = dict((var, temp_state[var]) for var in temp_var)
-            print_state.append([temp_state])
+            print_state.append(temp_state)
             #"node" is the whole while node
             temp_step = Sstr(str(print_command(node.wtrue)))
             print_step.append([Sstr(Sstr(init_step) - temp_step) - Sstr("; ")])
@@ -511,7 +517,8 @@ def evaluate_print(ast, state, print_var, print_state, print_step, init_step):
         print_state.append(temp_state)
         #"node" is the whole while node
         temp_step = Sstr(print_command(node))
-        print_step.append([Sstr(Sstr(init_step) - temp_step) - Sstr("; ") + "skip; "])
+        #print_step.append([Sstr(Sstr(init_step) - temp_step) - Sstr("; ") + "skip; "])
+        print_step.append(["skip; "+ (Sstr(Sstr(init_step) - temp_step) - Sstr("; "))])
         init_step = Sstr(Sstr(init_step) - temp_step) - Sstr("; ")
     elif node.op =="IF":
         cond = node.cond
@@ -524,8 +531,8 @@ def evaluate_print(ast, state, print_var, print_state, print_step, init_step):
             temp_state = dict((var, temp_state[var]) for var in temp_var)
             print_state.append(temp_state)
             temp_step = Sstr(str(print_command(node)))
-            print_step.append([Sstr(init_step) - temp_step + str(print_command(node.iftrue))])
-            init_step = Sstr(init_step) - temp_step + str(print_command(node.iftrue))
+            print_step.append([str(print_command(node.iftrue)) + (Sstr(init_step) - temp_step)])
+            init_step = str(print_command(node.iftrue)) + (Sstr(init_step) - temp_step)
             evaluate_print(iftrue, state, print_var, print_state, print_step, init_step)
         else:
             temp_var = set(print_var)
@@ -533,8 +540,8 @@ def evaluate_print(ast, state, print_var, print_state, print_step, init_step):
             temp_state = dict((var, temp_state[var]) for var in temp_var)
             print_state.append(temp_state)
             temp_step = Sstr(str(print_command(node)))
-            print_step.append([Sstr(init_step) - temp_step + str(print_command(node.iffalse))])
-            init_step = Sstr(init_step) - temp_step + str(print_command(node.iffalse))
+            print_step.append([str(print_command(node.iffalse)) + (Sstr(init_step) - temp_step)])
+            init_step = str(print_command(node.iffalse)) + (Sstr(init_step) - temp_step)
             evaluate_print(iffalse, state, print_var, print_state, print_step, init_step)
     else:
         raise Exception("Nothing I can do bro")
@@ -580,7 +587,6 @@ def main():
     parser = Parser(lexer)
     interpreter = Interpreter(parser)
     interpreter.visit()
-
     step_list = interpreter.print_step
     #flattened the nested list
     step_list = [item for sublist in step_list for item in sublist]
@@ -590,28 +596,25 @@ def main():
         del state_list[0]
     
     step_list[-1] = 'skip'
-    #print(step_list)
-    #print(state_list)
+
+    if len(state_list) > 10000:
+        state_list = state_list[0:10000]
+        step_list = step_list[0:10000]
+    
     #print(print_var)
-    for i in range(len(state_list)):
-        output_string = []
-        for key in sorted(state_list[i]):
-            separator = " "
-            output_string.append(separator.join([key, "→", str(state_list[i][key])]))
+    if len(state_list) ==1 and state_list[0] == {} and text[0:4] == "skip": 
+        print('')
+    else:
+        for i in range(len(state_list)):
+            output_string = []
+            for key in sorted(state_list[i]):
+                separator = " "
+                output_string.append(separator.join([key, "→", str(state_list[i][key])]))
 
-        state_string = ''.join(["{", ", ".join(output_string), "}"])
-        step_string = ' '.join(['⇒', step_list[i]])
-        print(step_string, state_string, sep = ', ')
-        
-        '''
-
-    output_string = []
-    for item in sorted(print_var):
-        separator = " "
-        output_string.append(separator.join([item, "→",str(state[item])]))
-    print("{", ", ".join(output_string), "}", sep = "")
-'''
-
+            state_string = ''.join(["{", ", ".join(output_string), "}"])
+            step_string = ' '.join(['⇒', step_list[i]])
+            print(step_string, state_string, sep = ', ')
+            
 
 if __name__ == '__main__':
     main()
